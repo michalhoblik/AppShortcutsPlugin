@@ -1,4 +1,8 @@
-﻿using Android.App;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
+using Android.App;
 using Android.Content;
 using Android.Content.PM;
 using Android.Graphics.Drawables;
@@ -7,11 +11,6 @@ using Android.Runtime;
 using Android.Util;
 using Plugin.AppShortcuts.Android;
 using Plugin.AppShortcuts.Icons;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using System.Threading.Tasks;
 using AUri = Android.Net.Uri;
 
 namespace Plugin.AppShortcuts
@@ -19,13 +18,12 @@ namespace Plugin.AppShortcuts
     [Preserve(AllMembers = true)]
     internal class AppShortcutsImplementation : IAppShortcuts, IPlatformSupport
     {
-        private readonly string NOT_SUPPORTED_ERROR_MESSAGE = $"Operation not supported on Android API 24 or below. Use {nameof(CrossAppShortcuts)}.{nameof(CrossAppShortcuts.IsSupported)} to check if the current device supports this feature.";
+        private readonly string NOT_SUPPORTED_ERROR_MESSAGE
+            = $"Operation not supported on Android API 24 or below. Use {nameof(CrossAppShortcuts)}.{nameof(CrossAppShortcuts.IsSupported)} to check if the current device supports this feature.";
 
         private readonly IIconProvider _embeddedIconProvider;
         private readonly IIconProvider _customIconProvider;
         private readonly ShortcutManager _manager;
-        private readonly bool _isShortcutsSupported;
-
         private Type _drawableClass;
 
         public AppShortcutsImplementation()
@@ -34,7 +32,7 @@ namespace Plugin.AppShortcuts
             _customIconProvider = new CustomIconProvider();
             _manager = (ShortcutManager)Application.Context.GetSystemService(Context.ShortcutService);
 
-            _isShortcutsSupported = Build.VERSION.SdkInt >= BuildVersionCodes.NMr1;
+            IsSupportedByCurrentPlatformVersion = Build.VERSION.SdkInt >= BuildVersionCodes.NMr1;
 
             Init();
         }
@@ -45,73 +43,62 @@ namespace Plugin.AppShortcuts
             (_customIconProvider as CustomIconProvider)?.Init(_drawableClass);
         }
 
-        public bool IsSupportedByCurrentPlatformVersion => _isShortcutsSupported;
+        public bool IsSupportedByCurrentPlatformVersion { get; }
 
-        public async Task AddShortcut(Shortcut shortcut)
+        public void AddShortcut(Shortcut shortcut)
         {
-            if (!_isShortcutsSupported)
+            if (!IsSupportedByCurrentPlatformVersion)
                 throw new NotSupportedOnDeviceException(NOT_SUPPORTED_ERROR_MESSAGE);
 
-            
-                var context = Application.Context;
-                var builder = new ShortcutInfo.Builder(context, shortcut.ShortcutId);
+            var context = Application.Context;
+            var builder = new ShortcutInfo.Builder(context, shortcut.ShortcutId);
 
-                var uri = AUri.Parse(shortcut.Uri);
+            var uri = AUri.Parse(shortcut.Uri);
 
-                builder.SetIntent(new Intent(Intent.ActionView, uri));
-                builder.SetShortLabel(shortcut.Label);
-                builder.SetLongLabel(shortcut.Description);
+            builder.SetIntent(new Intent(Intent.ActionView, uri));
+            builder.SetShortLabel(shortcut.Label);
+            builder.SetLongLabel(shortcut.Description);
 
-                var icon = await CreateIcon(shortcut.Icon);
-                if (icon != null)
-                    builder.SetIcon(icon);
+            var icon = CreateIcon(shortcut.Icon);
+            if (icon != null)
+                builder.SetIcon(icon);
 
-                var scut = builder.Build();
+            var scut = builder.Build();
 
-                if (_manager.DynamicShortcuts == null || !_manager.DynamicShortcuts.Any())
-                    _manager.SetDynamicShortcuts(new List<ShortcutInfo> { scut });
-                else
-                    _manager.AddDynamicShortcuts(new List<ShortcutInfo> { scut });
-            
+            if (_manager.DynamicShortcuts == null || !_manager.DynamicShortcuts.Any())
+                _manager.SetDynamicShortcuts(new List<ShortcutInfo> { scut });
+            else
+                _manager.AddDynamicShortcuts(new List<ShortcutInfo> { scut });
         }
 
-        public async Task<List<Shortcut>> GetShortcuts()
+        public IEnumerable<Shortcut> GetShortcuts()
         {
-            if (!_isShortcutsSupported)
+            if (!IsSupportedByCurrentPlatformVersion)
                 throw new NotSupportedOnDeviceException(NOT_SUPPORTED_ERROR_MESSAGE);
 
-            return await Task.Run(() =>
+            var dynamicShortcuts = _manager.DynamicShortcuts;
+            var shortcuts = dynamicShortcuts.Select(s => new Shortcut(s.Id)
             {
-                var dynamicShortcuts = _manager.DynamicShortcuts;
-                var shortcuts = dynamicShortcuts.Select(s => new Shortcut(s.Id)
-                {
-                    Label = s.ShortLabel,
-                    Description = s.LongLabel,
-                    Uri = s.Intent.ToUri(IntentUriType.AllowUnsafe)
-                }).ToList();
-                return shortcuts;
+                Label = s.ShortLabel,
+                Description = s.LongLabel,
+                Uri = s.Intent.ToUri(IntentUriType.AllowUnsafe)
             });
+            return shortcuts;
         }
 
-        public async Task RemoveShortcut(string shortcutId)
+        public void RemoveShortcut(string shortcutId)
         {
-            await Task.Run(() =>
-            {
-                if (!_isShortcutsSupported)
-                    throw new NotSupportedOnDeviceException(NOT_SUPPORTED_ERROR_MESSAGE);
+            if (!IsSupportedByCurrentPlatformVersion)
+                throw new NotSupportedOnDeviceException(NOT_SUPPORTED_ERROR_MESSAGE);
 
-                _manager.RemoveDynamicShortcuts(new List<string> { shortcutId });
-            });
+            _manager.RemoveDynamicShortcuts(new List<string> { shortcutId });
         }
 
-        private async Task<Icon> CreateIcon(IShortcutIcon icon)
+        private Icon CreateIcon(IShortcutIcon icon)
         {
             try
             {
-                if (icon is CustomIcon)
-                    return await _customIconProvider.CreatePlatformIcon(icon) as Icon;
-
-                return await _embeddedIconProvider.CreatePlatformIcon(icon) as Icon;
+                return ((icon is CustomIcon) ? _customIconProvider.CreatePlatformIcon(icon) : _embeddedIconProvider.CreatePlatformIcon(icon)) as Icon;
             }
             catch (Exception ex)
             {

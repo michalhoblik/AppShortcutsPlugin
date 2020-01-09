@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.ObjectModel;
-using System.Threading.Tasks;
 using Plugin.AppShortcuts;
 using Xamarin.Forms;
 
@@ -14,15 +13,10 @@ namespace AppShortcutsTests.Pages
             Shortcuts = new ObservableCollection<Shortcut>();
 
             ShortcutsListView.ItemsSource = Shortcuts;
-            ShortcutsListView.RefreshCommand = new Command(async () => await RefreshShortcutsList());
+            ShortcutsListView.RefreshCommand = new Command(() => RefreshShortcutsList());
         }
 
-        private ObservableCollection<Shortcut> _shortcuts;
-        public ObservableCollection<Shortcut> Shortcuts
-        {
-            get => _shortcuts;
-            set => _shortcuts = value;
-        }
+        public ObservableCollection<Shortcut> Shortcuts { get; set; }
 
         protected override void OnAppearing()
         {
@@ -42,17 +36,17 @@ namespace AppShortcutsTests.Pages
             await Navigation.PushAsync(new TestShortcutsPage());
         }
 
-        public async void DeleteShortcut(object sender, EventArgs e)
+        public void DeleteShortcut(object sender, EventArgs e)
         {
             var menuItem = (MenuItem)sender;
             var sc = (Shortcut)menuItem.CommandParameter;
-            await CrossAppShortcuts.Current.RemoveShortcut(sc.ShortcutId);
-            await RefreshShortcutsList();
+            CrossAppShortcuts.Current.RemoveShortcut(sc.ShortcutId);
+            RefreshShortcutsList();
         }
 
-        private async Task RefreshShortcutsList()
+        private void RefreshShortcutsList()
         {
-            var shortcuts = await CrossAppShortcuts.Current.GetShortcuts();
+            var shortcuts = CrossAppShortcuts.Current.GetShortcuts();
 
             Device.BeginInvokeOnMainThread(() =>
             {
@@ -63,11 +57,6 @@ namespace AppShortcutsTests.Pages
                 }
             });
             ShortcutsListView.IsRefreshing = false;
-        }
-
-        private void ProcessDeeplink(object sender, string uri)
-        {
-            DisplayAlert("Navigation from Deep Link", uri, "OK");
         }
     }
 }

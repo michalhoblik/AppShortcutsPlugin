@@ -1,7 +1,6 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
-using System.Threading.Tasks;
 using Android.App;
 using Android.Graphics;
 using Android.Graphics.Drawables;
@@ -19,14 +18,13 @@ namespace Plugin.AppShortcuts.Android
             _drawableClass = drawableType;
         }
 
-        public async Task<object> CreatePlatformIcon(IShortcutIcon shortcutIcon)
+        public object CreatePlatformIcon(IShortcutIcon shortcutIcon)
         {
             if (_drawableClass == null)
             {
                 throw new Exception(
                     $"{nameof(CustomIconProvider)}.{nameof(Init)} must be called before this method can be used.");
             }
-
 
             var iconName = shortcutIcon.IconName;
             if (File.Exists(iconName))

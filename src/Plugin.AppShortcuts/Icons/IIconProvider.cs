@@ -1,9 +1,7 @@
-﻿using System.Threading.Tasks;
-
-namespace Plugin.AppShortcuts.Icons
+﻿namespace Plugin.AppShortcuts.Icons
 {
     internal interface IIconProvider
     {
-        Task<object> CreatePlatformIcon(IShortcutIcon shortcutIcon);
+        object CreatePlatformIcon(IShortcutIcon shortcutIcon);
     }
 }

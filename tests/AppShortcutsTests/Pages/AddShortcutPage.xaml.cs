@@ -24,9 +24,9 @@ namespace AppShortcutsTests.Pages
             LoadShortcut(shortcutId);
         }
 
-        private async void LoadShortcut(string shortcutId)
+        private void LoadShortcut(string shortcutId)
         {
-            var shortcuts = await CrossAppShortcuts.Current.GetShortcuts();
+            var shortcuts = CrossAppShortcuts.Current.GetShortcuts();
             _shortcut = shortcuts.FirstOrDefault(s => string.Equals(s.ShortcutId, shortcutId));
 
             if (_shortcut == null)
@@ -57,77 +57,46 @@ namespace AppShortcutsTests.Pages
             _shortcut.Icon = icon;
             _shortcut.Uri = $"stc://{nameof(AppShortcutsTests)}/{nameof(AddShortcutPage)}/{_shortcut.ShortcutId}";
 
-            await CrossAppShortcuts.Current.AddShortcut(_shortcut);
+            CrossAppShortcuts.Current.AddShortcut(_shortcut);
 
-            Navigation.PopAsync();
+            await Navigation.PopAsync();
         }
 
-        private static Func<string, IShortcutIcon> ResolveEmbeddedIcon = iconType =>
+        private static readonly Func<string, IShortcutIcon> ResolveEmbeddedIcon = iconType =>
         {
-            switch (iconType)
+            return iconType switch
             {
-                case "Add":
-                    return new AddIcon();
-                case "Alarm":
-                    return new AlarmIcon();
-                case "Audio":
-                    return new AudioIcon();
-                case "Bookmark":
-                    return new BookmarkIcon();
-                case "CapturePhoto":
-                    return new CapturePhotoIcon();
-                case "CaptureVideo":
-                    return new CaptureVideoIcon();
-                case "Cloud":
-                    return new CloudIcon();
-                case "Compose":
-                    return new ComposeIcon();
-                case "Confirmation":
-                    return new ConfirmationIcon();
-                case "Contact":
-                    return new ContactIcon();
-                case "Date":
-                    return new DateIcon();
-                case "Favorite":
-                    return new FavoriteIcon();
-                case "Home":
-                    return new HomeIcon();
-                case "Invitation":
-                    return new InvitationIcon();
-                case "Location":
-                    return new LocationIcon();
-                case "Love":
-                    return new LoveIcon();
-                case "Mail":
-                    return new MailIcon();
-                case "MarkLocation":
-                    return new MarkLocationIcon();
-                case "Message":
-                    return new MessageIcon();
-                case "Pause":
-                    return new PauseIcon();
-                case "Play":
-                    return new PlayIcon();
-                case "Prohibit":
-                    return new ProhibitIcon();
-                case "Search":
-                    return new SearchIcon();
-                case "Share":
-                    return new ShareIcon();
-                case "Shuffle":
-                    return new ShuffleIcon();
-                case "Task":
-                    return new TaskIcon();
-                case "TaskCompleted":
-                    return new TaskCompletedIcon();
-                case "Time":
-                    return new TimeIcon();
-                case "Update":
-                    return new UpdateIcon();
-                case "Default":
-                default:
-                    return new DefaultIcon();
-            }
+                "Add" => new AddIcon(),
+                "Alarm" => new AlarmIcon(),
+                "Audio" => new AudioIcon(),
+                "Bookmark" => new BookmarkIcon(),
+                "CapturePhoto" => new CapturePhotoIcon(),
+                "CaptureVideo" => new CaptureVideoIcon(),
+                "Cloud" => new CloudIcon(),
+                "Compose" => new ComposeIcon(),
+                "Confirmation" => new ConfirmationIcon(),
+                "Contact" => new ContactIcon(),
+                "Date" => new DateIcon(),
+                "Favorite" => new FavoriteIcon(),
+                "Home" => new HomeIcon(),
+                "Invitation" => new InvitationIcon(),
+                "Location" => new LocationIcon(),
+                "Love" => new LoveIcon(),
+                "Mail" => new MailIcon(),
+                "MarkLocation" => new MarkLocationIcon(),
+                "Message" => new MessageIcon(),
+                "Pause" => new PauseIcon(),
+                "Play" => new PlayIcon(),
+                "Prohibit" => new ProhibitIcon(),
+                "Search" => new SearchIcon(),
+                "Share" => new ShareIcon(),
+                "Shuffle" => new ShuffleIcon(),
+                "Task" => new TaskIcon(),
+                "TaskCompleted" => new TaskCompletedIcon(),
+                "Time" => new TimeIcon(),
+                "Update" => new UpdateIcon(),
+                _ => new DefaultIcon(),
+            };
         };
     }
 }
